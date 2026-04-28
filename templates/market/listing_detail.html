@@ -3,29 +3,43 @@
 {% block title %}{{ listing.title }} | MiniMarket{% endblock %}
 
 {% block content %}
-  <h1>{{ listing.title }}</h1>
+  <div class="row g-4">
+    <div class="col-12 col-lg-6">
+      <div class="bg-white rounded-3 shadow-sm p-3">
+        {% if listing.image %}
+          <img src="{{ listing.image.url }}" alt="{{ listing.title }}" class="img-fluid rounded" />
+        {% else %}
+          <div class="text-secondary">No image</div>
+        {% endif %}
+      </div>
+    </div>
 
-  <p><strong>Category:</strong> {{ listing.category.name }}</p>
-  <p><strong>Price:</strong> {{ listing.price }}</p>
-  {% if listing.location %}
-    <p><strong>Location:</strong> {{ listing.location }}</p>
-  {% endif %}
-  {% if listing.description %}
-    <p>{{ listing.description }}</p>
-  {% endif %}
+    <div class="col-12 col-lg-6">
+      <div class="bg-white rounded-3 shadow-sm p-4">
+        <h1 class="h3 mb-3">{{ listing.title }}</h1>
 
-  {% if listing.image %}
-    <p><img src="{{ listing.image.url }}" alt="{{ listing.title }}" style="max-width: 480px; height: auto;" /></p>
-  {% endif %}
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+          <span class="badge text-bg-light">{{ listing.category.name }}</span>
+          {% if listing.location %}
+            <span class="text-secondary small">{{ listing.location }}</span>
+          {% endif %}
+        </div>
 
-  <p><a href="{% url 'listing_list' %}">Back to listings</a></p>
+        <div class="fs-4 fw-semibold mb-3">{{ listing.price }}</div>
 
-  {% if user.is_authenticated and user.id == listing.owner_id %}
-    <p>
-      <a href="{% url 'listing_update' listing.pk %}">Edit</a>
-      |
-      <a href="{% url 'listing_delete' listing.pk %}">Delete</a>
-    </p>
-  {% endif %}
+        {% if listing.description %}
+          <p class="mb-4">{{ listing.description }}</p>
+        {% endif %}
+
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'listing_list' %}">Back</a>
+          {% if user.is_authenticated and user.id == listing.owner_id %}
+            <a class="btn btn-primary" href="{% url 'listing_update' listing.pk %}">Edit</a>
+            <a class="btn btn-outline-danger" href="{% url 'listing_delete' listing.pk %}">Delete</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 

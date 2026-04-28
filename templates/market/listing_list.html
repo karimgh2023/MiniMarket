@@ -3,51 +3,80 @@
 {% block title %}Listings | MiniMarket{% endblock %}
 
 {% block content %}
-  <h1>Listings</h1>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 m-0">Listings</h1>
+    <div>
+      {% if user.is_authenticated %}
+        <a class="btn btn-primary btn-sm" href="{% url 'listing_create' %}">Create a listing</a>
+      {% else %}
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}?next={% url 'listing_create' %}">Login to create</a>
+      {% endif %}
+    </div>
+  </div>
 
-  <form method="get">
-    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search..." />
-    <button type="submit">Search</button>
+  <form method="get" class="row g-2 mb-4">
+    <div class="col-sm-10">
+      <input class="form-control" type="text" name="q" value="{{ request.GET.q }}" placeholder="Search title or description..." />
+    </div>
+    <div class="col-sm-2 d-grid">
+      <button class="btn btn-outline-secondary" type="submit">Search</button>
+    </div>
     {% if request.GET.q %}
-      <a href="{% url 'listing_list' %}">Clear</a>
+      <div class="col-12">
+        <a href="{% url 'listing_list' %}">Clear search</a>
+      </div>
     {% endif %}
   </form>
 
-  {% if user.is_authenticated %}
-    <p><a href="{% url 'listing_create' %}">Create a listing</a></p>
-  {% else %}
-    <p><a href="{% url 'login' %}?next={% url 'listing_create' %}">Login to create a listing</a></p>
-  {% endif %}
-
   {% if listings %}
-    <ul>
+    <div class="row g-3">
       {% for listing in listings %}
-        <li>
-          <a href="{% url 'listing_detail' listing.pk %}">{{ listing.title }}</a>
-          - {{ listing.price }}
-          ({{ listing.category.name }})
-        </li>
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+            {% if listing.image %}
+              <img src="{{ listing.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="object-fit: cover; height: 180px;" />
+            {% endif %}
+            <div class="card-body">
+              <h2 class="h6 card-title mb-2">
+                <a class="text-decoration-none" href="{% url 'listing_detail' listing.pk %}">{{ listing.title }}</a>
+              </h2>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">{{ listing.price }}</span>
+                <span class="badge text-bg-light">{{ listing.category.name }}</span>
+              </div>
+              {% if listing.location %}
+                <div class="text-secondary small mt-2">{{ listing.location }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   {% else %}
     <p>No listings yet.</p>
   {% endif %}
 
   {% if is_paginated %}
-    <nav>
-      <ul style="list-style:none; padding-left:0;">
+    <nav class="mt-4" aria-label="Listings pagination">
+      <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
-          <li style="display:inline;">
-            <a href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+          <li class="page-item">
+            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
           </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Previous</span></li>
         {% endif %}
-        <li style="display:inline; margin: 0 8px;">
-          Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+
+        <li class="page-item disabled">
+          <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
         </li>
+
         {% if page_obj.has_next %}
-          <li style="display:inline;">
-            <a href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+          <li class="page-item">
+            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
           </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Next</span></li>
         {% endif %}
       </ul>
     </nav>
