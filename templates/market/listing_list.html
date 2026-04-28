@@ -5,6 +5,14 @@
 {% block content %}
   <h1>Listings</h1>
 
+  <form method="get">
+    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search..." />
+    <button type="submit">Search</button>
+    {% if request.GET.q %}
+      <a href="{% url 'listing_list' %}">Clear</a>
+    {% endif %}
+  </form>
+
   {% if user.is_authenticated %}
     <p><a href="{% url 'listing_create' %}">Create a listing</a></p>
   {% else %}
@@ -23,6 +31,26 @@
     </ul>
   {% else %}
     <p>No listings yet.</p>
+  {% endif %}
+
+  {% if is_paginated %}
+    <nav>
+      <ul style="list-style:none; padding-left:0;">
+        {% if page_obj.has_previous %}
+          <li style="display:inline;">
+            <a href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+          </li>
+        {% endif %}
+        <li style="display:inline; margin: 0 8px;">
+          Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </li>
+        {% if page_obj.has_next %}
+          <li style="display:inline;">
+            <a href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
   {% endif %}
 {% endblock %}
 

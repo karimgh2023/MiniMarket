@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db.models import Q
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
@@ -14,6 +15,14 @@ class ListingListView(ListView):
     model = Listing
     template_name = 'market/listing_list.html'
     context_object_name = 'listings'
+    paginate_by = 10
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('category', 'owner')
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+        return qs
 
 
 class ListingDetailView(DetailView):
