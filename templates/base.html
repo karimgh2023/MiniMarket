@@ -8,6 +8,7 @@
   <body>
     <nav>
       <a href="{% url 'home' %}">Home</a>
+      <a href="{% url 'listing_list' %}">Listings</a>
       {% if user.is_authenticated %}
         <span>Hi, {{ user.get_username }}</span>
         <form method="post" action="{% url 'logout' %}" style="display:inline;">

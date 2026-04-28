@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{{ listing.title }} | MiniMarket{% endblock %}
+
+{% block content %}
+  <h1>{{ listing.title }}</h1>
+
+  <p><strong>Category:</strong> {{ listing.category.name }}</p>
+  <p><strong>Price:</strong> {{ listing.price }}</p>
+  {% if listing.location %}
+    <p><strong>Location:</strong> {{ listing.location }}</p>
+  {% endif %}
+  {% if listing.description %}
+    <p>{{ listing.description }}</p>
+  {% endif %}
+
+  {% if listing.image %}
+    <p><img src="{{ listing.image.url }}" alt="{{ listing.title }}" style="max-width: 480px; height: auto;" /></p>
+  {% endif %}
+
+  <p><a href="{% url 'listing_list' %}">Back to listings</a></p>
+
+  {% if user.is_authenticated and user.id == listing.owner_id %}
+    <p>
+      <a href="{% url 'listing_update' listing.pk %}">Edit</a>
+      |
+      <a href="{% url 'listing_delete' listing.pk %}">Delete</a>
+    </p>
+  {% endif %}
+{% endblock %}
+

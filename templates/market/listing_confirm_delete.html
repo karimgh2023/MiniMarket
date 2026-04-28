@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Delete | MiniMarket{% endblock %}
+
+{% block content %}
+  <h1>Delete listing</h1>
+  <p>Are you sure you want to delete “{{ object.title }}”?</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Yes, delete</button>
+    <a href="{% url 'listing_detail' object.pk %}">Cancel</a>
+  </form>
+{% endblock %}
+

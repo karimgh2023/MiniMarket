@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Listings | MiniMarket{% endblock %}
+
+{% block content %}
+  <h1>Listings</h1>
+
+  {% if user.is_authenticated %}
+    <p><a href="{% url 'listing_create' %}">Create a listing</a></p>
+  {% else %}
+    <p><a href="{% url 'login' %}?next={% url 'listing_create' %}">Login to create a listing</a></p>
+  {% endif %}
+
+  {% if listings %}
+    <ul>
+      {% for listing in listings %}
+        <li>
+          <a href="{% url 'listing_detail' listing.pk %}">{{ listing.title }}</a>
+          - {{ listing.price }}
+          ({{ listing.category.name }})
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No listings yet.</p>
+  {% endif %}
+{% endblock %}
+
