@@ -3,65 +3,102 @@
 {% block title %}Listings | MiniMarket{% endblock %}
 
 {% block content %}
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <h1 class="h3 m-0">Listings</h1>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="mm-listings-heading">All Listings</h1>
     <div>
       {% if user.is_authenticated %}
-        <a class="btn btn-primary btn-sm" href="{% url 'listing_create' %}">Create a listing</a>
+        <a class="btn-primary-custom" href="{% url 'listing_create' %}">Create a listing</a>
       {% else %}
-        <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}?next={% url 'listing_create' %}">Login to create</a>
+        <a class="btn-outline-custom" href="{% url 'login' %}?next={% url 'listing_create' %}">Create a listing</a>
       {% endif %}
     </div>
   </div>
 
-  <form method="get" class="row g-2 mb-4">
-    <div class="col-sm-10">
-      <input class="form-control" type="text" name="q" value="{{ request.GET.q }}" placeholder="Search title or description..." />
-    </div>
-    <div class="col-sm-2 d-grid">
-      <button class="btn btn-outline-secondary" type="submit">Search</button>
-    </div>
-    {% if request.GET.q %}
-      <div class="col-12">
-        <a href="{% url 'listing_list' %}">Clear search</a>
-      </div>
+  <form method="get" class="mm-search-bar">
+    <label class="visually-hidden" for="listing-search-q">Search listings</label>
+    <input
+      id="listing-search-q"
+      class="mm-search-input"
+      type="text"
+      name="q"
+      value="{{ request.GET.q }}"
+      placeholder="Search title or description..."
+    />
+    {% if request.GET.category %}
+      <input type="hidden" name="category" value="{{ request.GET.category }}" />
     {% endif %}
+    <button class="btn-primary-custom" type="submit">Search</button>
   </form>
 
+  {% if request.GET.q %}
+    <p class="small mb-3">
+      <a href="{% url 'listing_list' %}{% if request.GET.category %}?category={{ request.GET.category|urlencode }}{% endif %}" class="mm-text-muted">Clear search</a>
+    </p>
+  {% endif %}
+
+  {% regroup listings by category as category_groups %}
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <a
+      href="{% url 'listing_list' %}{% if request.GET.q %}?q={{ request.GET.q|urlencode }}{% endif %}"
+      class="filter-chip{% if not request.GET.category %} active{% endif %}"
+      data-mm-chip="all"
+    >
+      All
+    </a>
+    {% for group in category_groups %}
+      <a
+        href="{% url 'listing_list' %}?category={{ group.grouper.pk }}{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}"
+        class="filter-chip{% if request.GET.category == group.grouper.pk|stringformat:'s' %} active{% endif %}"
+        data-mm-chip="{{ group.grouper.pk }}"
+      >
+        {{ group.grouper.name }}
+      </a>
+    {% endfor %}
+  </div>
+
   {% if listings %}
-    <div class="row g-3">
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="mm-listing-grid">
       {% for listing in listings %}
-        <div class="col-12 col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm">
-            {% if listing.image %}
-              <img src="{{ listing.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="object-fit: cover; height: 180px;" />
-            {% endif %}
-            <div class="card-body">
-              <h2 class="h6 card-title mb-2">
-                <a class="text-decoration-none" href="{% url 'listing_detail' listing.pk %}">{{ listing.title }}</a>
-              </h2>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">{{ listing.price }}</span>
-                <span class="badge text-bg-light">{{ listing.category.name }}</span>
-              </div>
-              {% if listing.location %}
-                <div class="text-secondary small mt-2">{{ listing.location }}</div>
+        <div class="col" data-mm-listing-category="{{ listing.category_id }}">
+          <a href="{% url 'listing_detail' listing.pk %}" class="d-block h-100 text-decoration-none">
+            <div class="listing-card">
+              {% if listing.image %}
+                <div class="listing-card-img">
+                  <img src="{{ listing.image.url }}" alt="{{ listing.title }}" style="width: 100%; height: 100%; object-fit: cover" />
+                </div>
+              {% else %}
+                <div class="listing-card-img listing-card-img-placeholder">
+                  <span style="font-size: 32px; opacity: 0.3" aria-hidden="true">🖼️</span>
+                </div>
               {% endif %}
+              <span class="listing-card-badge">{{ listing.category.name }}</span>
+              <div class="listing-card-body">
+                <div class="listing-card-title">{{ listing.title }}</div>
+                <div class="listing-card-price">${{ listing.price }}</div>
+                <div class="listing-card-loc">
+                  {% if listing.location %}&#128205; {{ listing.location }}{% else %}<span class="mm-text-muted">No location</span>{% endif %}
+                </div>
+              </div>
             </div>
-          </div>
+          </a>
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <p>No listings yet.</p>
+    <p class="mm-text-muted">No listings yet.</p>
   {% endif %}
 
   {% if is_paginated %}
-    <nav class="mt-4" aria-label="Listings pagination">
-      <ul class="pagination justify-content-center">
+    <nav class="mt-5 mm-pagination" aria-label="Listings pagination">
+      <ul class="pagination justify-content-center flex-wrap">
         {% if page_obj.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+            <a
+              class="page-link"
+              href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
+            >
+              Previous
+            </a>
           </li>
         {% else %}
           <li class="page-item disabled"><span class="page-link">Previous</span></li>
@@ -73,7 +110,12 @@
 
         {% if page_obj.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+            <a
+              class="page-link"
+              href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
+            >
+              Next
+            </a>
           </li>
         {% else %}
           <li class="page-item disabled"><span class="page-link">Next</span></li>
@@ -83,3 +125,17 @@
   {% endif %}
 {% endblock %}
 
+{% block extra_js %}
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var cat = params.get("category");
+      if (!cat) return;
+      document.querySelectorAll("[data-mm-listing-category]").forEach(function (el) {
+        if (el.getAttribute("data-mm-listing-category") !== cat) {
+          el.style.display = "none";
+        }
+      });
+    })();
+  </script>
+{% endblock %}

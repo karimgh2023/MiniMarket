@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from .forms import ListingForm
 from .models import Listing
 
 
@@ -33,8 +34,8 @@ class ListingDetailView(DetailView):
 
 class ListingCreateView(LoginRequiredMixin, CreateView):
     model = Listing
+    form_class = ListingForm
     template_name = 'market/listing_form.html'
-    fields = ['category', 'title', 'description', 'price', 'location', 'image']
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
@@ -49,8 +50,8 @@ class OwnerRequiredMixin(UserPassesTestMixin):
 
 class ListingUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Listing
+    form_class = ListingForm
     template_name = 'market/listing_form.html'
-    fields = ['category', 'title', 'description', 'price', 'location', 'image']
 
 
 class ListingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):

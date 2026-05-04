@@ -1,17 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Delete | MiniMarket{% endblock %}
+{% block title %}Delete listing | MiniMarket{% endblock %}
 
 {% block content %}
-  <div class="bg-white rounded-3 shadow-sm p-4">
-    <h1 class="h4 mb-3">Delete listing</h1>
-    <p>Are you sure you want to delete “{{ object.title }}”?</p>
+  <div class="mm-form-panel mm-narrow-delete">
+    <h1 class="mm-form-title">Delete listing</h1>
+    <p class="mm-form-sub mb-4">
+      Are you sure you want to delete <span class="fw-semibold" style="color: #1a1a2e">“{{ object.title }}”</span>? This cannot be undone.
+    </p>
 
-    <form method="post" class="d-flex gap-2">
+    <form method="post" class="d-flex flex-wrap gap-3">
       {% csrf_token %}
-      <button class="btn btn-danger" type="submit">Yes, delete</button>
-      <a class="btn btn-outline-secondary" href="{% url 'listing_detail' object.pk %}">Cancel</a>
+      <button type="submit" class="btn-danger-custom">Yes, delete</button>
+      <a class="btn-outline-gray-custom" href="{% url 'listing_detail' object.pk %}">Cancel</a>
     </form>
   </div>
 {% endblock %}
-

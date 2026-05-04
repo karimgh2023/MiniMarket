@@ -1,21 +1,37 @@
 {% extends "base.html" %}
 
+{% block hero %}
+  <section class="mm-hero">
+    <h1 class="mm-hero-title">
+      Buy &amp; Sell <span>Anything</span>
+    </h1>
+    <p class="mm-hero-lead">
+      A simple marketplace to publish and browse listings from people around you.
+    </p>
+    <div class="mm-hero-actions">
+      <a href="{% url 'listing_list' %}" class="btn-primary-custom">Browse listings</a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'listing_create' %}" class="btn-outline-custom btn-outline-white">Create a listing</a>
+      {% else %}
+        <a href="{% url 'login' %}?next={% url 'listing_create' %}" class="btn-outline-custom btn-outline-white">Login to create</a>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}
+
 {% block content %}
-  <div class="p-4 p-md-5 mb-4 bg-white rounded-3 shadow-sm">
-    <div class="col-lg-8 px-0">
-      <h1 class="display-6 fw-bold">MiniMarket</h1>
-      <p class="lead my-3">
-        A simple marketplace to publish and browse listings.
-      </p>
-      <div class="d-flex gap-2">
-        <a class="btn btn-primary" href="{% url 'listing_list' %}">Browse listings</a>
-        {% if user.is_authenticated %}
-          <a class="btn btn-outline-secondary" href="{% url 'listing_create' %}">Create a listing</a>
-        {% else %}
-          <a class="btn btn-outline-secondary" href="{% url 'login' %}?next={% url 'listing_create' %}">Login to create</a>
-        {% endif %}
-      </div>
+  <div class="row text-center py-4">
+    <div class="col">
+      <h3 style="color: #6c63ff; font-weight: 700">240+</h3>
+      <p class="mm-text-muted small mb-0">Active listings</p>
+    </div>
+    <div class="col">
+      <h3 style="color: #6c63ff; font-weight: 700">18</h3>
+      <p class="mm-text-muted small mb-0">Categories</p>
+    </div>
+    <div class="col">
+      <h3 style="color: #6c63ff; font-weight: 700">Free</h3>
+      <p class="mm-text-muted small mb-0">Always</p>
     </div>
   </div>
 {% endblock %}
-
