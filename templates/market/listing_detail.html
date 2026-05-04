@@ -3,48 +3,122 @@
 {% block title %}{{ listing.title }} | MiniMarket{% endblock %}
 
 {% block content %}
-  <div class="mm-detail-shell">
-    <div class="row g-0">
-      <div class="col-md-6">
-        {% if listing.image %}
-          <div class="mm-detail-img-wrap p-0">
-            <img src="{{ listing.image.url }}" alt="{{ listing.title }}" />
-          </div>
-        {% else %}
-          <div class="mm-detail-img-wrap mm-detail-placeholder" role="img" aria-label="No image">🖼️</div>
+  <div class="detail-shell">
+    <div class="detail-image-col">
+      {% if listing.image %}
+        <img src="{{ listing.image.url }}" alt="{{ listing.title }}" class="detail-main-img" />
+      {% else %}
+        <div class="detail-img-placeholder" aria-hidden="true">🖼️</div>
+      {% endif %}
+    </div>
+
+    <div class="detail-info-col">
+      <div class="detail-badges">
+        <span class="badge-category">{{ listing.category.name }}</span>
+        {% if listing.location %}
+          <span class="badge-location">📍 {{ listing.location }}</span>
         {% endif %}
       </div>
-      <div class="col-md-6">
-        <div class="p-4 p-md-5">
-          <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-            <span class="badge" style="background: #f0eeff; color: #6c63ff; font-weight: 500; font-size: 13px">{{ listing.category.name }}</span>
-            {% if listing.location %}
-              <span class="mm-text-muted small">· {{ listing.location }}</span>
-            {% endif %}
-          </div>
 
-          <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #1a1a2e">{{ listing.title }}</h1>
-          <div style="font-size: 34px; font-weight: 700; color: #6c63ff; margin-bottom: 16px">${{ listing.price }}</div>
+      <h1 class="detail-title">{{ listing.title }}</h1>
+      <div class="detail-price">${{ listing.price }}</div>
 
-          {% if listing.description %}
-            <p style="font-size: 15px; color: #6c757d; line-height: 1.7; margin-bottom: 20px">{{ listing.description }}</p>
-          {% else %}
-            <p class="mm-text-muted small mb-4">No description provided.</p>
-          {% endif %}
+      {% if listing.description %}
+        <p class="detail-description">{{ listing.description }}</p>
+      {% else %}
+        <p class="detail-description">No description provided.</p>
+      {% endif %}
 
-          <p style="font-size: 14px; color: #6c757d; margin-bottom: 28px">
-            {% if listing.location %}📍 {{ listing.location }}{% else %}<span class="mm-text-muted">No location listed</span>{% endif %}
-          </p>
+      <div class="detail-meta-row">
+        <span class="detail-meta-item">📅 Listed {{ listing.created_at|timesince }} ago</span>
+        <span class="detail-meta-item">👤 {{ listing.owner.username }}</span>
+      </div>
 
-          <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'listing_list' %}" class="btn-back-custom">← Back</a>
-            {% if user.is_authenticated and user.id == listing.owner_id %}
-              <a href="{% url 'listing_update' listing.pk %}" class="btn-primary-custom">Edit</a>
-              <a href="{% url 'listing_delete' listing.pk %}" class="btn-danger-custom">Delete</a>
-            {% endif %}
-          </div>
-        </div>
+      <div class="detail-actions">
+        <a href="{% url 'listing_list' %}" class="btn-back-custom">← Back</a>
+        {% if user.is_authenticated and user.id == listing.owner_id %}
+          <a href="{% url 'listing_update' listing.pk %}" class="btn-primary-custom">Edit</a>
+          <a href="{% url 'listing_delete' listing.pk %}" class="btn-danger-custom">Delete</a>
+        {% endif %}
+        <button type="button" class="btn-share" onclick="shareListing()">↗ Share</button>
       </div>
     </div>
   </div>
+
+  {% if related %}
+    <section class="related-section">
+      <h3 class="related-title">More in {{ listing.category.name }}</h3>
+      <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for item in related %}
+          <div class="col">
+            <a href="{% url 'listing_detail' item.pk %}" class="text-decoration-none d-block h-100">
+              <div class="listing-card h-100">
+                <div class="listing-card-img {% if not item.image %}listing-card-img-placeholder{% endif %}">
+                  {% if item.image %}
+                    <img src="{{ item.image.url }}" alt="{{ item.title }}" />
+                  {% else %}
+                    <span class="related-placeholder-emoji" aria-hidden="true">🖼️</span>
+                  {% endif %}
+                </div>
+                <span class="listing-card-badge">{{ item.category.name }}</span>
+                <div class="listing-card-body">
+                  <div class="listing-card-title">{{ item.title }}</div>
+                  <div class="listing-card-price">${{ item.price }}</div>
+                  <div class="listing-card-loc">
+                    {% if item.location %}📍 {{ item.location }}{% else %}<span class="mm-text-muted">No location</span>{% endif %}
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    function shareListing() {
+      var title = '{{ listing.title|escapejs }}';
+      var price = '{{ listing.price|escapejs }}';
+      if (navigator.share) {
+        navigator.share({
+          title: title,
+          text: title + ' — $' + price + ' on MiniMarket',
+          url: window.location.href,
+        });
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(window.location.href).then(function () {
+          showToast('Link copied to clipboard!', 'success');
+        });
+      } else {
+        showToast('Copy this URL from the address bar.', 'info');
+      }
+    }
+
+    function showToast(msg, type) {
+      var t = document.createElement('div');
+      t.className = 'toast-item toast-' + type;
+      t.setAttribute('role', 'status');
+      t.innerHTML =
+        '<div class="toast-icon">✓</div><span class="toast-text">' + msg + '</span>' +
+        '<button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>';
+      var container = document.querySelector('.toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        container.setAttribute('aria-live', 'polite');
+        document.body.appendChild(container);
+      }
+      container.appendChild(t);
+      setTimeout(function () {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(110%)';
+        setTimeout(function () {
+          t.remove();
+        }, 400);
+      }, 3000);
+    }
+  </script>
 {% endblock %}

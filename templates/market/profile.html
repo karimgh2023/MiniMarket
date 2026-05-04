@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile — MiniMarket{% endblock %}
+
+{% block content %}
+  <div class="profile-layout">
+    <aside class="profile-sidebar">
+      <div class="profile-avatar-lg">{{ user.username|first|upper }}</div>
+      <h2 class="profile-username">{{ user.username }}</h2>
+      <p class="profile-email">{% if user.email %}{{ user.email }}{% else %}<span class="mm-text-muted">No email on file</span>{% endif %}</p>
+      <div class="profile-stats-box">
+        <div class="profile-stat">
+          <span class="profile-stat-num">{{ user_listings.count }}</span>
+          <span class="profile-stat-label">Listings</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat-num">{{ user.date_joined|date:"M Y" }}</span>
+          <span class="profile-stat-label">Joined</span>
+        </div>
+      </div>
+      <a href="{% url 'listing_create' %}" class="btn-primary-custom profile-new-btn">+ New listing</a>
+    </aside>
+
+    <main class="profile-main">
+      <div class="profile-main-header">
+        <h3 class="profile-section-title">My Listings</h3>
+      </div>
+
+      {% if user_listings %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+          {% for listing in user_listings %}
+            <div class="col">
+              <div class="listing-card profile-listing-card h-100">
+                <a href="{% url 'listing_detail' listing.pk %}" class="listing-card-click">
+                  <div class="listing-card-img {% if not listing.image %}listing-card-img-placeholder{% endif %}">
+                    {% if listing.image %}
+                      <img src="{{ listing.image.url }}" alt="{{ listing.title }}" />
+                    {% else %}
+                      <span class="related-placeholder-emoji" aria-hidden="true">🖼️</span>
+                    {% endif %}
+                  </div>
+                  <span class="listing-card-badge">{{ listing.category.name }}</span>
+                  <div class="listing-card-body">
+                    <div class="listing-card-title">{{ listing.title }}</div>
+                    <div class="listing-card-price">${{ listing.price }}</div>
+                    <div class="listing-card-loc">
+                      {% if listing.location %}📍 {{ listing.location }}{% else %}<span class="mm-text-muted">No location</span>{% endif %}
+                    </div>
+                  </div>
+                </a>
+                <div class="listing-card-actions">
+                  <a href="{% url 'listing_update' listing.pk %}" class="card-action-btn">Edit</a>
+                  <a href="{% url 'listing_delete' listing.pk %}" class="card-action-btn card-action-danger">Delete</a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon" aria-hidden="true">📦</div>
+          <h3 class="empty-state-title">No listings yet</h3>
+          <p class="empty-state-text">You haven't created any listings. Start selling today!</p>
+          <a href="{% url 'listing_create' %}" class="btn-primary-custom">Create your first listing</a>
+        </div>
+      {% endif %}
+    </main>
+  </div>
+{% endblock %}

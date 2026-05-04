@@ -3,11 +3,12 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, DetailView, FormView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, FormView, ListView, UpdateView
 
 from .forms import ListingForm, RegisterForm
 from .models import Category, Listing
@@ -107,10 +108,32 @@ class ListingListView(ListView):
         return ctx
 
 
-class ListingDetailView(DetailView):
-    model = Listing
-    template_name = 'market/listing_detail.html'
-    context_object_name = 'listing'
+def listing_detail(request, pk):
+    listing = get_object_or_404(
+        Listing.objects.select_related('category', 'owner'),
+        pk=pk,
+    )
+    related = (
+        Listing.objects.filter(category=listing.category)
+        .exclude(pk=listing.pk)
+        .select_related('category')
+        .order_by('-created_at')[:3]
+    )
+    return render(
+        request,
+        'market/listing_detail.html',
+        {'listing': listing, 'related': related},
+    )
+
+
+@login_required
+def profile(request):
+    user_listings = (
+        Listing.objects.filter(owner=request.user)
+        .select_related('category')
+        .order_by('-created_at')
+    )
+    return render(request, 'market/profile.html', {'user_listings': user_listings})
 
 
 class ListingCreateView(LoginRequiredMixin, CreateView):

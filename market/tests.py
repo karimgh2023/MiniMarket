@@ -128,6 +128,22 @@ class ListingPermissionTests(TestCase):
         self.assertTrue(Listing.objects.filter(pk=self.listing.pk).exists())
 
 
+class ProfileViewTests(TestCase):
+    def test_profile_redirects_when_anonymous(self):
+        response = self.client.get(reverse("profile"))
+        expected = f"{reverse('login')}?next={reverse('profile')}"
+        self.assertRedirects(response, expected)
+
+    def test_profile_renders_for_logged_in_user(self):
+        User.objects.create_user(username="member", password="pass12345")
+        self.client.login(username="member", password="pass12345")
+
+        response = self.client.get(reverse("profile"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "My Listings")
+
+
 class RegistrationViewTests(TestCase):
     def test_register_page_renders(self):
         response = self.client.get(reverse("register"))
