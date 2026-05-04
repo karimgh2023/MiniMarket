@@ -3,58 +3,103 @@
 {% block title %}Listings | MiniMarket{% endblock %}
 
 {% block content %}
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <h1 class="mm-listings-heading">All Listings</h1>
-    <div>
+  <div class="listings-header">
+    <h2 class="listings-title">All Listings</h2>
+    <div class="listings-controls">
+      <label class="visually-hidden" for="listing-sort">Sort listings</label>
+      <select
+        id="listing-sort"
+        class="sort-select"
+        onchange="const url = new URL(window.location); url.searchParams.set('sort', this.value); window.location = url;"
+      >
+        <option value="-created_at" {% if sort == '-created_at' %}selected{% endif %}>Newest first</option>
+        <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>Oldest first</option>
+        <option value="price" {% if sort == 'price' %}selected{% endif %}>Price: low → high</option>
+        <option value="-price" {% if sort == '-price' %}selected{% endif %}>Price: high → low</option>
+        <option value="title" {% if sort == 'title' %}selected{% endif %}>A → Z</option>
+      </select>
       {% if user.is_authenticated %}
-        <a class="btn-primary-custom" href="{% url 'listing_create' %}">Create a listing</a>
+        <a class="btn-primary-custom" href="{% url 'listing_create' %}">+ Create listing</a>
       {% else %}
-        <a class="btn-outline-custom" href="{% url 'login' %}?next={% url 'listing_create' %}">Create a listing</a>
+        <a class="btn-outline-custom" href="{% url 'login' %}?next={% url 'listing_create' %}">+ Create listing</a>
       {% endif %}
     </div>
   </div>
 
   <form method="get" class="mm-search-bar">
+    {% if selected_category %}
+      <input type="hidden" name="category" value="{{ selected_category }}" />
+    {% endif %}
+    {% if min_price %}
+      <input type="hidden" name="min_price" value="{{ min_price }}" />
+    {% endif %}
+    {% if max_price %}
+      <input type="hidden" name="max_price" value="{{ max_price }}" />
+    {% endif %}
+    <input type="hidden" name="sort" value="{{ sort }}" />
     <label class="visually-hidden" for="listing-search-q">Search listings</label>
     <input
       id="listing-search-q"
       class="mm-search-input"
       type="text"
       name="q"
-      value="{{ request.GET.q }}"
+      value="{{ q }}"
       placeholder="Search title or description..."
     />
-    {% if request.GET.category %}
-      <input type="hidden" name="category" value="{{ request.GET.category }}" />
-    {% endif %}
     <button class="btn-primary-custom" type="submit">Search</button>
   </form>
 
-  {% if request.GET.q %}
-    <p class="small mb-3">
-      <a href="{% url 'listing_list' %}{% if request.GET.category %}?category={{ request.GET.category|urlencode }}{% endif %}" class="mm-text-muted">Clear search</a>
+  {% if q %}
+    <p class="pagination-info" style="margin-bottom: 1rem">
+      <a
+        href="{% url 'listing_list' %}?{% if selected_category %}category={{ selected_category|urlencode }}&{% endif %}{% if min_price %}min_price={{ min_price|urlencode }}&{% endif %}{% if max_price %}max_price={{ max_price|urlencode }}&{% endif %}sort={{ sort|urlencode }}"
+        class="btn-clear-filter"
+      >
+        Clear search
+      </a>
     </p>
   {% endif %}
 
-  {% regroup listings by category as category_groups %}
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    <a
-      href="{% url 'listing_list' %}{% if request.GET.q %}?q={{ request.GET.q|urlencode }}{% endif %}"
-      class="filter-chip{% if not request.GET.category %} active{% endif %}"
-      data-mm-chip="all"
-    >
-      All
-    </a>
-    {% for group in category_groups %}
+  <div class="price-filter-row" style="padding-top: 0">
+    <div class="price-filter-group" style="margin-bottom: 1rem">
       <a
-        href="{% url 'listing_list' %}?category={{ group.grouper.pk }}{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}"
-        class="filter-chip{% if request.GET.category == group.grouper.pk|stringformat:'s' %} active{% endif %}"
-        data-mm-chip="{{ group.grouper.pk }}"
+        href="{% url 'listing_list' %}?{{ listing_query_no_cat }}"
+        class="filter-chip{% if not selected_category %} active{% endif %}"
       >
-        {{ group.grouper.name }}
+        All
       </a>
-    {% endfor %}
+      {% for cat in categories %}
+        <a
+          href="{% url 'listing_list' %}?{{ listing_query_no_cat }}&category={{ cat.pk }}"
+          class="filter-chip{% if selected_category == cat.pk|stringformat:'s' %} active{% endif %}"
+        >
+          {{ cat.name }}
+        </a>
+      {% endfor %}
+    </div>
   </div>
+
+  <form method="get" class="price-filter-row">
+    {% if q %}
+      <input type="hidden" name="q" value="{{ q }}" />
+    {% endif %}
+    {% if selected_category %}
+      <input type="hidden" name="category" value="{{ selected_category }}" />
+    {% endif %}
+    <input type="hidden" name="sort" value="{{ sort }}" />
+    <div class="price-filter-group">
+      <span class="price-filter-label">Price range</span>
+      <div class="price-inputs">
+        <input type="number" name="min_price" placeholder="Min $" value="{{ min_price }}" class="price-input" min="0" step="0.01" />
+        <span class="price-separator">—</span>
+        <input type="number" name="max_price" placeholder="Max $" value="{{ max_price }}" class="price-input" min="0" step="0.01" />
+        <button type="submit" class="btn-price-filter">Apply</button>
+        {% if min_price or max_price %}
+          <a href="{% url 'listing_list' %}?{{ listing_query_no_price }}" class="btn-clear-filter">Clear</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
 
   {% if listings %}
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="mm-listing-grid">
@@ -85,57 +130,68 @@
       {% endfor %}
     </div>
   {% else %}
-    <p class="mm-text-muted">No listings yet.</p>
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">🔍</div>
+      <h3 class="empty-state-title">No listings found</h3>
+      <p class="empty-state-text">
+        {% if q %}
+          No results for “<strong>{{ q }}</strong>”. Try different keywords or clear your filters.
+        {% elif selected_category or min_price or max_price %}
+          No listings match your filters. Try widening the price range or choosing another category.
+        {% else %}
+          There are no listings yet. Be the first to create one.
+        {% endif %}
+      </p>
+      <a href="{% url 'listing_list' %}" class="btn-primary-custom">Clear all filters</a>
+    </div>
   {% endif %}
 
-  {% if is_paginated %}
-    <nav class="mt-5 mm-pagination" aria-label="Listings pagination">
-      <ul class="pagination justify-content-center flex-wrap">
+  {% if page_obj.has_other_pages %}
+    <nav class="pagination-nav">
+      <ul class="pagination-list">
         {% if page_obj.has_previous %}
-          <li class="page-item">
+          <li>
             <a
-              class="page-link"
-              href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
+              class="page-btn"
+              href="?page={{ page_obj.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if min_price %}&amp;min_price={{ min_price|urlencode }}{% endif %}{% if max_price %}&amp;max_price={{ max_price|urlencode }}{% endif %}{% if sort %}&amp;sort={{ sort|urlencode }}{% endif %}"
             >
-              Previous
+              ← Prev
             </a>
           </li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">Previous</span></li>
         {% endif %}
 
-        <li class="page-item disabled">
-          <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-        </li>
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li><span class="page-btn page-btn-active">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li>
+              <a
+                class="page-btn"
+                href="?page={{ num }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if min_price %}&amp;min_price={{ min_price|urlencode }}{% endif %}{% if max_price %}&amp;max_price={{ max_price|urlencode }}{% endif %}{% if sort %}&amp;sort={{ sort|urlencode }}{% endif %}"
+              >
+                {{ num }}
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
 
         {% if page_obj.has_next %}
-          <li class="page-item">
+          <li>
             <a
-              class="page-link"
-              href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
+              class="page-btn"
+              href="?page={{ page_obj.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if min_price %}&amp;min_price={{ min_price|urlencode }}{% endif %}{% if max_price %}&amp;max_price={{ max_price|urlencode }}{% endif %}{% if sort %}&amp;sort={{ sort|urlencode }}{% endif %}"
             >
-              Next
+              Next →
             </a>
           </li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">Next</span></li>
         {% endif %}
       </ul>
+
+      <p class="pagination-info">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        &nbsp;·&nbsp;
+        {{ page_obj.paginator.count }} listing{{ page_obj.paginator.count|pluralize }}
+      </p>
     </nav>
   {% endif %}
-{% endblock %}
-
-{% block extra_js %}
-  <script>
-    (function () {
-      var params = new URLSearchParams(window.location.search);
-      var cat = params.get("category");
-      if (!cat) return;
-      document.querySelectorAll("[data-mm-listing-category]").forEach(function (el) {
-        if (el.getAttribute("data-mm-listing-category") !== cat) {
-          el.style.display = "none";
-        }
-      });
-    })();
-  </script>
 {% endblock %}

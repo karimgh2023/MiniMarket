@@ -1,5 +1,6 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.models import User
 
 from .models import Listing
 
@@ -38,3 +39,9 @@ class ListingForm(BootstrapMixin, forms.ModelForm):
 
 class StyledAuthenticationForm(BootstrapMixin, AuthenticationForm):
     pass
+
+
+class RegisterForm(BootstrapMixin, UserCreationForm):
+    class Meta:
+        model = User
+        fields = ("username",)

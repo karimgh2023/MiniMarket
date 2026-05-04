@@ -49,14 +49,47 @@ class ListingListViewTests(TestCase):
         self.assertNotContains(response, "Desk Lamp")
 
     def test_listing_list_is_paginated(self):
-        for i in range(11):
+        for i in range(10):
             self._create_listing(f"Item {i}")
 
         response = self.client.get(reverse("listing_list"))
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["is_paginated"])
-        self.assertEqual(len(response.context["listings"]), 10)
+        self.assertEqual(len(response.context["listings"]), 9)
+
+    def test_category_filter(self):
+        cat2 = Category.objects.create(name="Other")
+        self._create_listing("In Books")
+        Listing.objects.create(
+            owner=self.owner,
+            category=cat2,
+            title="In Other",
+            description="",
+            price="15.00",
+            location="X",
+        )
+
+        response = self.client.get(reverse("listing_list"), {"category": str(self.category.pk)})
+
+        self.assertContains(response, "In Books")
+        self.assertNotContains(response, "In Other")
+
+    def test_price_range_filter(self):
+        self._create_listing("Cheap")
+        Listing.objects.create(
+            owner=self.owner,
+            category=self.category,
+            title="Pricy",
+            description="",
+            price="500.00",
+            location="Y",
+        )
+
+        response = self.client.get(reverse("listing_list"), {"max_price": "50"})
+
+        self.assertContains(response, "Cheap")
+        self.assertNotContains(response, "Pricy")
 
 
 class ListingPermissionTests(TestCase):
@@ -93,3 +126,34 @@ class ListingPermissionTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertTrue(Listing.objects.filter(pk=self.listing.pk).exists())
+
+
+class RegistrationViewTests(TestCase):
+    def test_register_page_renders(self):
+        response = self.client.get(reverse("register"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create an account")
+
+    def test_register_creates_user_and_logs_in(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "newshopper",
+                "password1": "very-unlikely-test-pass-99!",
+                "password2": "very-unlikely-test-pass-99!",
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("home"), status_code=302, target_status_code=200)
+        self.assertTrue(User.objects.filter(username="newshopper").exists())
+        self.assertTrue(response.context["user"].is_authenticated)
+
+    def test_register_redirects_when_already_logged_in(self):
+        User.objects.create_user(username="existing", password="pass12345")
+        self.client.login(username="existing", password="pass12345")
+
+        response = self.client.get(reverse("register"))
+
+        self.assertRedirects(response, reverse("home"))

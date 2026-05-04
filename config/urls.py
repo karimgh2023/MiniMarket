@@ -21,6 +21,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from market.forms import StyledAuthenticationForm
+from market.views import RegisterView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,6 +34,7 @@ urlpatterns = [
         ),
         name='login',
     ),
+    path('accounts/register/', RegisterView.as_view(), name='register'),
     path('accounts/', include('django.contrib.auth.urls')),
 ]
 
